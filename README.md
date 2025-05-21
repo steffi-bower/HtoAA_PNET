@@ -5,7 +5,7 @@ To run locally simply change the my args init() global variable test to true. Th
 
 
 ```
-$ setenv SCRAM_ARCH slc7_amd64_gcc900 
+$ setenv SCRAM_ARCH el8_amd64_gcc10 
 
 $ cmsrel CMSSW_12_4_20
 
