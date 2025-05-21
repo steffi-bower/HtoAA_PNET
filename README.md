@@ -11,7 +11,7 @@ $ cmsrel CMSSW_12_4_20
 
 $ cd CMSSW_12_4_20/src
 
-$ git clone --recursive git@github.com:red1habibullah/MiniAODSkimmer.git -b main
+$ git clone --recursive git@github.com:steffi-bower/HtoAA_PNET.git -b main
 
 $ cd HtoAA_PNET/higgstoaaAnalyzer/higgstoaaAnalyzer/python
 
