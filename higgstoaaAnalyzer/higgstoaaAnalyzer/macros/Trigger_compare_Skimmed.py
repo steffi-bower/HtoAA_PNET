@@ -1,0 +1,151 @@
+import ROOT
+import sys
+import subprocess
+import string,math,os
+import ConfigParser
+import glob
+import numpy as np
+import tdrstyle, CMS_lumi
+label = sys.argv [1]
+if label == "help" or label == "-help" or label == "-h" or label == "h":
+    print "Enter the title of the root stored in your local dir. You can enter it either filename or filename.root"
+    exit()
+if ".root" in label:
+    label = label.replace(".root","")
+
+tdrstyle.setTDRStyle()
+ROOT.gROOT.SetBatch(True)
+
+#change the CMS_lumi variables (see CMS_lumi.py)
+CMS_lumi.lumi_7TeV = "4.8 fb^{-1}"
+CMS_lumi.lumi_8TeV = "18.3 fb^{-1}"
+CMS_lumi.writeExtraText = 1
+CMS_lumi.extraText = "Preliminary"
+CMS_lumi.lumi_sqrtS = "13 TeV" # used with iPeriod = 0, e.g. for simulation-only plots (default is an empty string)
+iPeriod = 8
+
+iPos = 11
+if( iPos==0 ): CMS_lumi.relPosX = 0.12
+
+H_ref = 600; 
+W_ref = 800; 
+W = W_ref
+H  = H_ref
+T = 0.08*H_ref
+B = 0.12*H_ref 
+L = 0.12*W_ref
+R = 0.08*W_ref
+
+c = ROOT.TCanvas("c","c",50,50,W,H)
+c.SetFillColor(0)
+c.SetBorderMode(0)
+c.SetFrameFillStyle(0)
+c.SetFrameBorderMode(0)
+c.SetLeftMargin( L/W )
+c.SetRightMargin( R/W )
+c.SetTopMargin( T/H )
+c.SetBottomMargin( B/H )
+c.SetTickx(0)
+c.SetTicky(0)
+CMS_lumi.CMS_lumi(c, iPeriod, iPos)
+inFile = ROOT.TFile.Open(label+".root" ,"READ")
+outDir = "//uscms_data/d3/nbower/FSU/HtoAA/Analyzer/CMSSW_10_6_26/src/higgstoaaAnalyzer/higgstoaaAnalyzer/graphs/"+label+"/"
+def checkAndMakeDir(dir):
+    if not os.path.exists(dir):
+        os.mkdir(dir)
+
+def clearDir(dir):
+    for fil in glob.glob(dir+"/*"):
+        os.remove(fil)      
+checkAndMakeDir(outDir)
+plotting_variables=["Mvis","bMass",'EventSelection','l1Iso','l2Iso','l1Pt','l2Pt','l1dB','l2dB','l1dB_sig','l2dB_sig']
+
+totalevents= inFile.Get("h_nEvents").GetBinContent(2)
+channels = ["tauE_tauE","tauE_tauMu","tauMu_tauMu","tauHad_tauE","tauHad_tauMu"]
+
+for plot in plotting_variables:
+    checkAndMakeDir(outDir+"/"+plot+"/")
+    for channel in channels:
+        ROOT.gPad.SetLogy(0)
+
+        if plot !='EventSelection':
+            
+            bphHist = inFile.Get('h_'+channel+"_"+plot+"_BPH")
+            bphHist.SetMinimum(0)
+            
+            lepHist = inFile.Get('h_'+channel+"_"+plot+"_lep")
+            lepHist.SetMinimum(0)
+            title = bphHist.GetTitle()
+        else:
+            print(plot+"_"+channel)
+            bphHist = inFile.Get('h_'+channel+'_BPH_'+plot)
+            lepHist = inFile.Get('h_'+channel+'_lep_'+plot)
+            bphHist.SetMinimum(.1)
+            lepHist.SetMinimum(.1)
+            ROOT.gPad.SetLogy()
+            title = ""
+        if plot == "bMass":
+            bphHist.Rebin(2)
+            lepHist.Rebin(2)
+
+        bphHist.Scale(2.263/totalevents)
+        lepHist.Scale(2.263/totalevents)
+        
+        bphmax= bphHist.GetMaximum()
+        lepmax= lepHist.GetMaximum()
+        bphHist.SetLineColor(ROOT.kRed)
+
+        if bphHist.GetMaximum()>lepHist.GetMaximum():
+            histMax= bphHist
+            histMaxName= "BPH Trig"
+            histMin = lepHist
+            histMinName = "Lepton Trig"
+        else:
+            histMax=lepHist
+            histMinName= "BPH Trig"
+            histMaxName = "Lepton Trig"
+
+            histMin=bphHist
+
+
+        histMax.GetXaxis().SetTitle(title)
+        histMax.LabelsDeflate()
+        #bphHist.setMaximum(histMax)
+        CMS_lumi.CMS_lumi(c, iPeriod, iPos)
+        l = ROOT.TLegend(0.65,0.7,0.85,0.87)
+        l.AddEntry(histMax,histMaxName,"l")
+        l.AddEntry(histMin,histMinName,"l")
+        histMax.Draw()
+        histMin.Draw("SAME")
+        l.Draw()
+
+
+        c.cd()
+        c.Update()
+        c.RedrawAxis()
+        frame = c.GetFrame()
+        frame.Draw()
+        c.SaveAs(outDir+"/"+plot+"/"+channel+"_"+plot+".png")
+        c.Clear()
+
+#generalPlots = ["h_BPH_Muon_pt","h_BPH_Muon_iso","h_BPH_Muon_IP","h_BPH_Muon_eIP","h_BPH_Muon_IP_sig","h_BPH_Muon_DRB","h_BPH_Muons_nMuons"]
+generalPlots=['h_Triggers',"h_std_electron_selection","h_muon_selection","h_eCtau_selection","h_muCtau_selection","h_bJet_selection", "h_nEvents"]
+ROOT.gPad.SetLogy(0)
+checkAndMakeDir(outDir+"/GeneralHist/")
+for plot in generalPlots:
+    hist = inFile.Get(plot)
+    title = hist.GetTitle()
+    #hist.GetXaxis().SetTitle(title)
+    hist.LabelsDeflate()
+    hist.Draw("TEXT")
+    CMS_lumi.CMS_lumi(c, iPeriod, iPos)
+
+    c.cd()
+    c.Update()
+    c.RedrawAxis()
+    frame = c.GetFrame()
+    frame.Draw()
+    c.SaveAs(outDir+"/GeneralHist/"+plot+".png") 
+    c.Clear()
+hist = inFile.Get("h_nEvents")
+print ("There are "+str(hist.GetBinContent(1))+" Weighted events and"+str(hist.GetBinContent(2))+" Unweighted events")

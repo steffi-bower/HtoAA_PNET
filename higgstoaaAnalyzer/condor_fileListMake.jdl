@@ -1,0 +1,11 @@
+universe = vanilla
+use_x509userproxy = true
+request_memory = 4000
+Executable = RunFileListMaker.sh 
+Should_Transfer_Files = YES
+WhenToTransferOutput = ON_EXIT
+Transfer_Input_Files = Run_condor_config_Skimmed.sh
+Output = ./condorOut/condor_$ENV(JOBNAME).stdout
+Error = ./condorOut/condor_$ENV(JOBNAME).stderr
+Log = ./condorOut/condor_$ENV(JOBNAME).log
+Queue 1

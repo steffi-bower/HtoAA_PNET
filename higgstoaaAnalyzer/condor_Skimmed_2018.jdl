@@ -1,0 +1,12 @@
+universe = vanilla
+use_x509userproxy = true
+request_memory = $ENV(MEMORY)
+Executable = Run_condor_config_Skimmed_2018.sh 
+Should_Transfer_Files = YES
+WhenToTransferOutput = ON_EXIT
+Transfer_Input_Files = Run_condor_config_Skimmed_2018.sh
+Output = ./condorOut/condor_$ENV(JOBNAME).stdout
+Error = ./condorOut/condor_$ENV(JOBNAME).stderr
+Log = ./condorOut/condor_$ENV(JOBNAME).log
+Arguments = $ENV(ANALYSIS) $ENV(JOBNUM) $ENV(INFI) $ENV(SAMPLE) $ENV(HTBIN)
+Queue 1
